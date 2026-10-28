@@ -1,0 +1,42 @@
+-- TOUCH TO BREAK | MOBILE
+-- Dùng trong game Roblox của bạn hoặc game có quyền chỉnh sửa.
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+local enabled = true
+
+local function breakBlock(part)
+    if not enabled or not part or not part:IsA("BasePart") then
+        return
+    end
+
+    -- Chỉ tác động lên khối trong Workspace
+    if part:IsDescendantOf(workspace) then
+        print("Đã chạm khối:", part.Name)
+
+        -- Cần gọi cơ chế phá khối hợp lệ của game tại đây.
+        -- Không thể tự phá khối phía server chỉ bằng LocalScript.
+    end
+end
+
+-- Hỗ trợ thao tác chạm trên điện thoại
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.TouchTapInWorld:Connect(function(position, processed)
+    if processed or not enabled then return end
+
+    local camera = workspace.CurrentCamera
+    local ray = camera:ViewportPointToRay(position.X, position.Y)
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {player.Character}
+
+    local result = workspace:Raycast(ray.Origin, ray.Direction * 500, params)
+
+    if result then
+        breakBlock(result.Instance)
+    end
+end)
