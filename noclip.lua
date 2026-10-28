@@ -1,353 +1,147 @@
 
---// ALL-IN-ONE MOBILE MENU
---// Dành cho Roblox Studio
---// Đặt LocalScript trong StarterPlayerScripts
+--// NOCLIP MENU - MOBILE
+--// LocalScript
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local flying = false
 local noclip = false
-local flySpeed = 50
-local walkSpeed = 16
-local savedCFrame
-local flyConn, noclipConn
-local flyAttachment, flyVelocity
-local upHeld, downHeld = false, false
+local menuOpen = false
+local connection
 
+-- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "MobileMovementMenu"
+gui.Name = "NoclipMenu"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function round(obj, radius)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius)
-    c.Parent = obj
-end
+-- Icon mở menu
+local icon = Instance.new("TextButton")
+icon.Name = "OpenButton"
+icon.Size = UDim2.fromOffset(55, 55)
+icon.Position = UDim2.new(0, 20, 0.5, -27)
+icon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+icon.Text = "👻"
+icon.TextSize = 28
+icon.TextColor3 = Color3.new(1, 1, 1)
+icon.Parent = gui
 
-local function getCharacter()
-    local char = player.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if hum and root then return char, hum, root end
-end
+Instance.new("UICorner", icon).CornerRadius = UDim.new(1, 0)
 
-local function makeButton(parent, text, size, position, color)
-    local b = Instance.new("TextButton")
-    b.Size = size
-    b.Position = position
-    b.BackgroundColor3 = color or Color3.fromRGB(55, 60, 75)
-    b.Text = text
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.TextSize = 14
-    b.Font = Enum.Font.GothamBold
-    b.Parent = parent
-    round(b, 8)
-    return b
-end
-
--- Floating icon
-local icon = makeButton(
-    gui, "👻", UDim2.fromOffset(54, 54),
-    UDim2.new(0, 15, 0.4, 0),
-    Color3.fromRGB(40, 40, 55)
-)
-icon.TextSize = 26
-
--- Main window
+-- Menu chính
 local menu = Instance.new("Frame")
-menu.Size = UDim2.new(0.88, 0, 0.75, 0)
-menu.Position = UDim2.new(0.06, 0, 0.12, 0)
-menu.BackgroundColor3 = Color3.fromRGB(23, 23, 30)
+menu.Size = UDim2.fromOffset(230, 155)
+menu.Position = UDim2.new(0.5, -115, 0.5, -77)
+menu.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 menu.Visible = false
 menu.Parent = gui
-round(menu, 12)
 
-local sizeLimit = Instance.new("UISizeConstraint")
-sizeLimit.MaxSize = Vector2.new(360, 620)
-sizeLimit.MinSize = Vector2.new(280, 350)
-sizeLimit.Parent = menu
+Instance.new("UICorner", menu).CornerRadius = UDim.new(0, 12)
 
-local header = Instance.new("TextLabel")
-header.Size = UDim2.new(1, -48, 0, 42)
-header.Position = UDim2.fromOffset(12, 0)
-header.BackgroundTransparency = 1
-header.Text = "👻 MOVEMENT MENU"
-header.TextColor3 = Color3.new(1, 1, 1)
-header.TextSize = 17
-header.Font = Enum.Font.GothamBold
-header.TextXAlignment = Enum.TextXAlignment.Left
-header.Parent = menu
+-- Tiêu đề
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 40)
+title.Position = UDim2.fromOffset(10, 0)
+title.BackgroundTransparency = 1
+title.Text = "👻 NOCLIP MENU"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.Parent = menu
 
-local close = makeButton(
-    menu, "X", UDim2.fromOffset(32, 32),
-    UDim2.new(1, -38, 0, 5),
-    Color3.fromRGB(170, 45, 45)
-)
+-- Nút đóng
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(30, 30)
+close.Position = UDim2.new(1, -35, 0, 5)
+close.BackgroundColor3 = Color3.fromRGB(170, 45, 45)
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.Parent = menu
 
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -12, 1, -50)
-scroll.Position = UDim2.fromOffset(6, 44)
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 4
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.CanvasSize = UDim2.new()
-scroll.Parent = menu
+Instance.new("UICorner", close).CornerRadius = UDim.new(0, 8)
 
-local list = Instance.new("UIListLayout")
-list.Padding = UDim.new(0, 10)
-list.SortOrder = Enum.SortOrder.LayoutOrder
-list.Parent = scroll
+-- Nút bật/tắt
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(1, -20, 0, 45)
+toggle.Position = UDim2.fromOffset(10, 55)
+toggle.BackgroundColor3 = Color3.fromRGB(170, 45, 45)
+toggle.Text = "Noclip: OFF"
+toggle.TextColor3 = Color3.new(1, 1, 1)
+toggle.TextSize = 16
+toggle.Font = Enum.Font.GothamBold
+toggle.Parent = menu
 
-local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 5)
-padding.PaddingBottom = UDim.new(0, 12)
-padding.PaddingLeft = UDim.new(0, 4)
-padding.PaddingRight = UDim.new(0, 4)
-padding.Parent = scroll
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
 
-local function makeSection(title, height)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -4, 0, height)
-    frame.BackgroundColor3 = Color3.fromRGB(38, 38, 48)
-    frame.Parent = scroll
-    frame.LayoutOrder = #scroll:GetChildren()
-    round(frame, 10)
+local function updateCharacter()
+    local character = player.Character
+    if not character then return end
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -16, 0, 30)
-    label.Position = UDim2.fromOffset(8, 2)
-    label.BackgroundTransparency = 1
-    label.Text = title
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextSize = 15
-    label.Font = Enum.Font.GothamBold
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    return frame
-end
-
-local green = Color3.fromRGB(35, 145, 80)
-local red = Color3.fromRGB(170, 50, 50)
-local blue = Color3.fromRGB(55, 95, 160)
-
-local function addPair(parent, y, leftText, rightText, leftFn, rightFn)
-    local left = makeButton(
-        parent, leftText, UDim2.new(0.47, 0, 0, 36),
-        UDim2.new(0.02, 0, 0, y), green
-    )
-    local right = makeButton(
-        parent, rightText, UDim2.new(0.47, 0, 0, 36),
-        UDim2.new(0.51, 0, 0, y), red
-    )
-    left.Activated:Connect(leftFn)
-    right.Activated:Connect(rightFn)
-    return left, right
-end
-
--- FLY SECTION
-local flyFrame = makeSection("✈  FLY", 164)
-local flyOn, flyOff = addPair(
-    flyFrame, 34, "ON FLY", "OFF FLY",
-    function()
-        if flying then return end
-        local _, hum, root = getCharacter()
-        if not hum or not root then return end
-
-        flying = true
-        flyAttachment = Instance.new("Attachment")
-        flyAttachment.Parent = root
-
-        flyVelocity = Instance.new("LinearVelocity")
-        flyVelocity.Attachment0 = flyAttachment
-        flyVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
-        flyVelocity.VelocityConstraintMode =
-            Enum.VelocityConstraintMode.Vector
-        flyVelocity.MaxForce = 1000000
-        flyVelocity.VectorVelocity = Vector3.zero
-        flyVelocity.Parent = root
-
-        hum.PlatformStand = true
-
-        flyConn = RunService.RenderStepped:Connect(function()
-            if not flying or not root.Parent then return end
-            local direction = hum.MoveDirection
-            local vertical = (upHeld and 1 or 0) -
-                (downHeld and 1 or 0)
-
-            flyVelocity.VectorVelocity =
-                direction * flySpeed +
-                Vector3.new(0, vertical * flySpeed, 0)
-        end)
-    end,
-    function()
-        flying = false
-        upHeld, downHeld = false, false
-
-        if flyConn then flyConn:Disconnect(); flyConn = nil end
-        if flyVelocity then flyVelocity:Destroy(); flyVelocity = nil end
-        if flyAttachment then
-            flyAttachment:Destroy()
-            flyAttachment = nil
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not noclip
         end
-
-        local _, hum = getCharacter()
-        if hum then hum.PlatformStand = false end
     end
-)
+end
 
-local flyLabel = Instance.new("TextLabel")
-flyLabel.Size = UDim2.new(0.45, 0, 0, 25)
-flyLabel.Position = UDim2.new(0.03, 0, 0, 76)
-flyLabel.BackgroundTransparency = 1
-flyLabel.Text = "Fly Speed: 50"
-flyLabel.TextColor3 = Color3.new(1, 1, 1)
-flyLabel.TextSize = 13
-flyLabel.Parent = flyFrame
+local function setNoclip(state)
+    noclip = state
+    toggle.Text = noclip and "Noclip: ON" or "Noclip: OFF"
+    toggle.BackgroundColor3 = noclip
+        and Color3.fromRGB(35, 160, 85)
+        or Color3.fromRGB(170, 45, 45)
 
-local minus = makeButton(
-    flyFrame, "−", UDim2.new(0.2, 0, 0, 30),
-    UDim2.new(0.52, 0, 0, 74), blue
-)
-local plus = makeButton(
-    flyFrame, "+", UDim2.new(0.2, 0, 0, 30),
-    UDim2.new(0.76, 0, 0, 74), blue
-)
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
 
-minus.Activated:Connect(function()
-    flySpeed = math.max(1, flySpeed - 10)
-    flyLabel.Text = "Fly Speed: " .. flySpeed
-end)
-plus.Activated:Connect(function()
-    flySpeed = math.min(1000000, flySpeed + 10)
-    flyLabel.Text = "Fly Speed: " .. flySpeed
-end)
+    if noclip then
+        connection = RunService.Stepped:Connect(function()
+            local character = player.Character
+            if not character then return end
 
-local up = makeButton(
-    flyFrame, "▲ BAY LÊN", UDim2.new(0.45, 0, 0, 30),
-    UDim2.new(0.03, 0, 0, 119), blue
-)
-local down = makeButton(
-    flyFrame, "▼ BAY XUỐNG", UDim2.new(0.45, 0, 0, 30),
-    UDim2.new(0.52, 0, 0, 119), blue
-)
-
-up.Activated:Connect(function()
-    upHeld = not upHeld
-    up.Text = upHeld and "▲ ĐANG LÊN" or "▲ BAY LÊN"
-end)
-down.Activated:Connect(function()
-    downHeld = not downHeld
-    down.Text = downHeld and "▼ ĐANG XUỐNG" or "▼ BAY XUỐNG"
-end)
-
--- NOCLIP SECTION
-local noclipFrame = makeSection("👻  NOCLIP", 80)
-
-local function turnOnNoclip()
-    if noclip then return end
-    noclip = true
-    noclipConn = RunService.Stepped:Connect(function()
-        local char = player.Character
-        if char then
-            for _, part in ipairs(char:GetDescendants()) do
+            for _, part in ipairs(character:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
             end
-        end
-    end)
-end
-
-local function turnOffNoclip()
-    noclip = false
-    if noclipConn then
-        noclipConn:Disconnect()
-        noclipConn = nil
-    end
-
-    local char = player.Character
-    if char then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
-        end
+        end)
+    else
+        updateCharacter()
     end
 end
 
-addPair(
-    noclipFrame, 36, "ON NOCLIP", "OFF NOCLIP",
-    turnOnNoclip, turnOffNoclip
-)
-
--- TELEPORT SECTION
-local teleFrame = makeSection("📍  TELEPORT", 84)
-
-addPair(
-    teleFrame, 36, "SAVE POSITION", "TELEPORT",
-    function()
-        local _, _, root = getCharacter()
-        if root then savedCFrame = root.CFrame end
-    end,
-    function()
-        local _, _, root = getCharacter()
-        if root and savedCFrame then
-            root.CFrame = savedCFrame + Vector3.new(0, 3, 0)
-        end
-    end
-)
-
--- WALKSPEED SECTION
-local speedFrame = makeSection("🏃  WALKSPEED", 118)
-
-local speedBox = Instance.new("TextBox")
-speedBox.Size = UDim2.new(0.94, 0, 0, 34)
-speedBox.Position = UDim2.new(0.03, 0, 0, 34)
-speedBox.BackgroundColor3 = Color3.fromRGB(52, 52, 64)
-speedBox.TextColor3 = Color3.new(1, 1, 1)
-speedBox.PlaceholderText = "Nhập tốc độ (mặc định 16)"
-speedBox.Text = "16"
-speedBox.TextSize = 14
-speedBox.ClearTextOnFocus = false
-speedBox.Parent = speedFrame
-round(speedBox, 8)
-
-local applySpeed = makeButton(
-    speedFrame, "APPLY SPEED", UDim2.new(0.94, 0, 0, 32),
-    UDim2.new(0.03, 0, 0, 76), blue
-)
-applySpeed.Activated:Connect(function()
-    local n = tonumber(speedBox.Text)
-    if n and n >= 1 and n < math.huge then
-        walkSpeed = n
-        local _, hum = getCharacter()
-        if hum then hum.WalkSpeed = walkSpeed end
-    end
-end)
-
--- OPEN / CLOSE
 icon.Activated:Connect(function()
-    menu.Visible = not menu.Visible
+    menuOpen = not menuOpen
+    menu.Visible = menuOpen
 end)
 
 close.Activated:Connect(function()
+    menuOpen = false
     menu.Visible = false
 end)
 
--- DRAG ICON
+toggle.Activated:Connect(function()
+    setNoclip(not noclip)
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    if noclip then
+        setNoclip(true)
+    end
+end)
+
+-- Kéo icon bằng chuột hoặc cảm ứng
 local dragging = false
 local dragStart, startPos
 
 icon.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch
-        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = icon.Position
@@ -356,42 +150,22 @@ end)
 
 UIS.InputChanged:Connect(function(input)
     if dragging and (
-        input.UserInputType == Enum.UserInputType.Touch
-        or input.UserInputType == Enum.UserInputType.MouseMovement
+        input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch
     ) then
         local delta = input.Position - dragStart
         icon.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
         )
     end
 end)
 
 UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch
-        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
-end)
-
-player.CharacterAdded:Connect(function()
-    if flying then
-        flying = false
-        if flyConn then flyConn:Disconnect(); flyConn = nil end
-        if flyVelocity then flyVelocity:Destroy(); flyVelocity = nil end
-        if flyAttachment then
-            flyAttachment:Destroy()
-            flyAttachment = nil
-        end
-    end
-
-    if noclipConn then
-        noclipConn:Disconnect()
-        noclipConn = nil
-    end
-    noclip = false
-
-    task.wait(0.3)
-    local _, hum = getCharacter()
-    if hum then hum.WalkSpeed = walkSpeed end
 end)
