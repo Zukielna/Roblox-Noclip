@@ -1,5 +1,5 @@
 -- ==========================================================
--- ZENKAIBLOX BY ZUKIELNA - MENU WITH LIVE STATUS & ANTI-AFK
+-- ZENKAIBLOX BY ZUKIELNA - 14S FINAL MAP TELEPORT SCRIPT
 -- ==========================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -20,7 +20,6 @@ LocalPlayer.Idled:Connect(function()
     antiAfkActive = true
 end)
 
--- Kích hoạt giả lập ngầm liên tục để đảm bảo Anti-AFK luôn sẵn sàng
 task.spawn(function()
     while task.wait(50) do
         pcall(function()
@@ -34,16 +33,16 @@ end)
 -- Xóa bỏ menu cũ tránh trùng lặp
 pcall(function()
     for _, v in ipairs(CoreGui:GetChildren()) do
-        if v.Name == "ZenkaiBloxZukielnaLiveMenu" then v:Destroy() end
+        if v.Name == "ZenkaiBlox14sFinalMenu" then v:Destroy() end
     end
     for _, v in ipairs(PlayerGui:GetChildren()) do
-        if v.Name == "ZenkaiBloxZukielnaLiveMenu" then v:Destroy() end
+        if v.Name == "ZenkaiBlox14sFinalMenu" then v:Destroy() end
     end
 end)
 
 -- Tạo ScreenGui an toàn
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZenkaiBloxZukielnaLiveMenu"
+ScreenGui.Name = "ZenkaiBlox14sFinalMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 pcall(function()
@@ -75,24 +74,6 @@ local ZenoCFrame = CFrame.new(
     0, 1, 0, 
     0.140870303, 0, -0.990028024
 )
-
-local PrestigeMaps = {
-    { name = "Final", reqP = 1000 },
-    { name = "Dragon", reqP = 500 },
-    { name = "Setimo", reqP = 160 },
-    { name = "Vegeta", reqP = 55 },
-    { name = "Snowland", reqP = 25 },
-    { name = "KingCarpa", reqP = 5 }
-}
-
-local function GetBestPrestigeMap(currentPrestige)
-    for _, map in ipairs(PrestigeMaps) do
-        if currentPrestige >= map.reqP then
-            return map.name
-        end
-    end
-    return "ZenoPalace"
-end
 
 -- ==========================================================
 -- GIAO DIỆN MENU (UI)
@@ -199,7 +180,7 @@ CreateButton("👑 Full Auto Sequence (1200Z): OFF", function(btn)
     end
 end)
 
--- Bảng hiển thị Trạng thái chính và Trạng thái Anti-AFK
+-- Bảng hiển thị Trạng thái chính
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, 0, 0, 35)
 StatusLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
@@ -213,7 +194,7 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
 
--- Dòng thông báo riêng hiển thị trạng thái Anti-AFK trực quan
+-- Dòng thông báo hiển thị trạng thái Anti-AFK trực quan
 local AntiAfkLabel = Instance.new("TextLabel")
 AntiAfkLabel.Size = UDim2.new(1, 0, 0, 30)
 AntiAfkLabel.BackgroundColor3 = Color3.fromRGB(20, 35, 25)
@@ -245,7 +226,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================
--- QUY TRÌNH TỰ ĐỘNG PRESTIGE 1200Z (AN TOÀN TUYỆT ĐỐI)
+-- QUY TRÌNH TỰ ĐỘNG PRESTIGE 1200Z (CHỜ 14S VÀ TELE THẲNG MAP FINAL)
 -- ==========================================================
 local function ExecutePrestigeSequence()
     isProcessingSequence = true
@@ -299,23 +280,17 @@ local function ExecutePrestigeSequence()
             PrestigeRemote:FireServer("Accept")
         end
     end)
-    StatusLabel.Text = "4. Đang chờ 16s cập nhật điểm P..."
+    StatusLabel.Text = "4. Đang chờ 14s hoàn tất..."
     
-    task.wait(16)
+    -- Đợi đúng 14 giây theo yêu cầu mới
+    task.wait(14)
 
+    -- Dịch chuyển thẳng đến map "Final" bỏ qua kiểm tra điểm Prestige
     pcall(function()
-        local pVal = 0
-        local lstats = LocalPlayer:FindFirstChild("leaderstats")
-        local prestigeStat = lstats and lstats:FindFirstChild("Prestige")
-        if prestigeStat then
-            pVal = prestigeStat.Value
-        end
-
-        local bestMap = GetBestPrestigeMap(pVal)
-        StatusLabel.Text = "5. Vào map mạnh nhất: " .. bestMap
+        StatusLabel.Text = "5. Vào thẳng map cuối: Final"
 
         if TeleportMapRemote then
-            TeleportMapRemote:FireServer(bestMap)
+            TeleportMapRemote:FireServer("Final")
         end
     end)
 
@@ -384,4 +359,4 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
-print("[ZenkaiBlox By Zukielna] Loaded Successfully with Live Status!")
+print("[ZenkaiBlox By Zukielna] Loaded Successfully with 14s Final Teleport!")
