@@ -1,5 +1,5 @@
 -- ==========================================================
--- ZENKAI BOX - FINAL AUTO SCRIPT (ANTI-AFK + 16S WAIT + BEST MAP)
+-- ZENKAIBLOX BY ZUKIELNA - MENU WITH LIVE STATUS & ANTI-AFK
 -- ==========================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -8,29 +8,42 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local Leaderstats = LocalPlayer:WaitForChild("leaderstats")
 
 -- ----------------------------------------------------------
--- KÍCH HOẠT ANTI AFK (CHỐNG KICK KHI TREO MÁY)
+-- KÍCH HOẠT VÀ THEO DÕI TRẠNG THÁI ANTI-AFK
 -- ----------------------------------------------------------
+local antiAfkActive = false
+
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
+    antiAfkActive = true
 end)
 
--- Xóa bỏ toàn bộ các phiên bản menu cũ để tránh lỗi trùng lặp và ẩn GUI
+-- Kích hoạt giả lập ngầm liên tục để đảm bảo Anti-AFK luôn sẵn sàng
+task.spawn(function()
+    while task.wait(50) do
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+            antiAfkActive = true
+        end)
+    end
+end)
+
+-- Xóa bỏ menu cũ tránh trùng lặp
 pcall(function()
     for _, v in ipairs(CoreGui:GetChildren()) do
-        if v.Name == "ZenkaiBoxFinalBestMapMenu" then v:Destroy() end
+        if v.Name == "ZenkaiBloxZukielnaLiveMenu" then v:Destroy() end
     end
     for _, v in ipairs(PlayerGui:GetChildren()) do
-        if v.Name == "ZenkaiBoxFinalBestMapMenu" then v:Destroy() end
+        if v.Name == "ZenkaiBloxZukielnaLiveMenu" then v:Destroy() end
     end
 end)
 
--- Tạo ScreenGui chính ưu tiên hiển thị an toàn
+-- Tạo ScreenGui an toàn
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZenkaiBoxFinalBestMapMenu"
+ScreenGui.Name = "ZenkaiBloxZukielnaLiveMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 pcall(function()
@@ -40,7 +53,6 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = PlayerGui
 end
 
--- Cấu hình trạng thái
 local Config = {
     AutoTrain = false,
     AutoSequence1200 = false,
@@ -50,13 +62,13 @@ local Config = {
 
 local isProcessingSequence = false
 
--- Lấy đường dẫn Remote từ game
+-- Lấy đường dẫn Remotes an toàn
 local TrainingRemote = ReplicatedStorage:WaitForChild("Combate"):WaitForChild("Training"):WaitForChild("TrainingRemote")
 local RemotesFolder = ReplicatedStorage:WaitForChild("Remotes")
 local PrestigeRemote = RemotesFolder:FindFirstChild("RemotPrestige") and RemotesFolder.RemotPrestige:WaitForChild("PrestigeRemote")
 local TeleportMapRemote = ReplicatedStorage:WaitForChild("TeleportSystem"):WaitForChild("Remotes"):WaitForChild("TeleportToMap")
 
--- Tọa độ của Zeno (Dịch chuyển lần 2)
+-- Tọa độ Zeno
 local ZenoCFrame = CFrame.new(
     -26161.4883, 436.015259, 10904.1895, 
     -0.990028024, 0, -0.140870303, 
@@ -64,7 +76,6 @@ local ZenoCFrame = CFrame.new(
     0.140870303, 0, -0.990028024
 )
 
--- Danh sách map Prestige sắp xếp từ mạnh nhất đến yếu dần để tự động check sau khi Prestige
 local PrestigeMaps = {
     { name = "Final", reqP = 1000 },
     { name = "Dragon", reqP = 500 },
@@ -80,15 +91,15 @@ local function GetBestPrestigeMap(currentPrestige)
             return map.name
         end
     end
-    return "ZenoPalace" -- Mặc định nếu chưa đủ mốc nhỏ nhất
+    return "ZenoPalace"
 end
 
 -- ==========================================================
 -- GIAO DIỆN MENU (UI)
 -- ==========================================================
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 390)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -195)
+MainFrame.Size = UDim2.new(0, 320, 0, 430)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -215)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -103,9 +114,9 @@ UICorner.Parent = MainFrame
 local TitleBar = Instance.new("TextLabel")
 TitleBar.Size = UDim2.new(1, 0, 0, 45)
 TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-TitleBar.Text = "⚡ ZENKAI BOX | Map: Đang tải... ⚡"
+TitleBar.Text = "⚡ ZenkaiBlox By Zukielna | Map: ... ⚡"
 TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleBar.TextSize = 13
+TitleBar.TextSize = 11
 TitleBar.Font = Enum.Font.GothamBold
 TitleBar.Parent = MainFrame
 
@@ -131,7 +142,7 @@ local Container = Instance.new("ScrollingFrame")
 Container.Size = UDim2.new(1, -20, 1, -55)
 Container.Position = UDim2.new(0, 10, 0, 50)
 Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0, 0, 0, 350)
+Container.CanvasSize = UDim2.new(0, 0, 0, 390)
 Container.ScrollBarThickness = 4
 Container.Visible = true
 Container.Parent = MainFrame
@@ -165,7 +176,6 @@ end
 -- CÁC NÚT BẤM CHỨC NĂNG
 -- ==========================================================
 
--- 1. Auto Train
 CreateButton("Auto Train: OFF", function(btn)
     Config.AutoTrain = not Config.AutoTrain
     if Config.AutoTrain then
@@ -177,7 +187,6 @@ CreateButton("Auto Train: OFF", function(btn)
     end
 end)
 
--- 2. Bật/Tắt Full Auto Sequence
 CreateButton("👑 Full Auto Sequence (1200Z): OFF", function(btn)
     Config.AutoSequence1200 = not Config.AutoSequence1200
     if Config.AutoSequence1200 then
@@ -190,11 +199,11 @@ CreateButton("👑 Full Auto Sequence (1200Z): OFF", function(btn)
     end
 end)
 
--- Hiển thị trạng thái
+-- Bảng hiển thị Trạng thái chính và Trạng thái Anti-AFK
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1, 0, 0, 35)
 StatusLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-StatusLabel.Text = "Trạng thái: Sẵn sàng cày cuốc (Anti-AFK Active)"
+StatusLabel.Text = "Trạng thái: Sẵn sàng cày cuốc"
 StatusLabel.TextColor3 = Color3.fromRGB(241, 196, 15)
 StatusLabel.TextSize = 11
 StatusLabel.Font = Enum.Font.Gotham
@@ -204,8 +213,22 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
 
+-- Dòng thông báo riêng hiển thị trạng thái Anti-AFK trực quan
+local AntiAfkLabel = Instance.new("TextLabel")
+AntiAfkLabel.Size = UDim2.new(1, 0, 0, 30)
+AntiAfkLabel.BackgroundColor3 = Color3.fromRGB(20, 35, 25)
+AntiAfkLabel.Text = "🛡️ [Anti-AFK]: Đang hoạt động (Bảo vệ 24/7)"
+AntiAfkLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+AntiAfkLabel.TextSize = 11
+AntiAfkLabel.Font = Enum.Font.GothamBold
+AntiAfkLabel.Parent = Container
+
+local AntiAfkCorner = Instance.new("UICorner")
+AntiAfkCorner.CornerRadius = UDim.new(0, 6)
+AntiAfkCorner.Parent = AntiAfkLabel
+
 -- ==========================================================
--- CẬP NHẬT TÊN MAP LÊN TIÊU ĐỀ MENU
+-- CẬP NHẬT TÊN MAP LÊN TIÊU ĐỀ
 -- ==========================================================
 task.spawn(function()
     while task.wait(1) do
@@ -216,15 +239,14 @@ task.spawn(function()
             else
                 currentMapName = workspace.Name ~= "" and "Main Server" or "Unknown"
             end
-            TitleBar.Text = "⚡ ZENKAI BOX | Map: " .. currentMapName .. " ⚡"
+            TitleBar.Text = "⚡ Zukielna | Map: " .. currentMapName
         end)
     end
 end)
 
 -- ==========================================================
--- QUY TRÌNH TỰ ĐỘNG HOÀN CHỈNH
+-- QUY TRÌNH TỰ ĐỘNG PRESTIGE 1200Z (AN TOÀN TUYỆT ĐỐI)
 -- ==========================================================
-
 local function ExecutePrestigeSequence()
     isProcessingSequence = true
     local char = LocalPlayer.Character
@@ -235,7 +257,6 @@ local function ExecutePrestigeSequence()
         return 
     end
 
-    -- BƯỚC 1: Mở menu map ngầm nhưng ép ẩn giao diện map (Enabled = false) để không hiện lên màn hình
     pcall(function()
         local mapasGui = PlayerGui:FindFirstChild("MapasGui")
         local menuGui = PlayerGui:FindFirstChild("Menu")
@@ -249,7 +270,6 @@ local function ExecutePrestigeSequence()
     StatusLabel.Text = "1. Vào Map ZenoPalace (Ẩn Map)..."
     task.wait(2.5)
 
-    -- BƯỚC 2: Teleport đến thẳng chỗ Zeno
     local currentHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if currentHRP then
         currentHRP.CFrame = ZenoCFrame
@@ -257,7 +277,6 @@ local function ExecutePrestigeSequence()
     StatusLabel.Text = "2. Đã tới chỗ Zeno!"
     task.wait(0.8)
 
-    -- BƯỚC 3: Tự động tương tác Talk với Zeno
     pcall(function()
         local zenoModel = workspace:FindFirstChild("MissionQuest", true) 
             and workspace.MissionQuest:FindFirstChild("Prestige", true) 
@@ -273,7 +292,6 @@ local function ExecutePrestigeSequence()
     StatusLabel.Text = "3. Đang nói chuyện với Zeno..."
     task.wait(0.5)
 
-    -- BƯỚC 4: Tự động bấm Accept Prestige để tăng điểm P
     pcall(function()
         if PrestigeRemote then
             PrestigeRemote:FireServer("Open")
@@ -283,13 +301,12 @@ local function ExecutePrestigeSequence()
     end)
     StatusLabel.Text = "4. Đang chờ 16s cập nhật điểm P..."
     
-    -- Đợi đúng 16 giây theo yêu cầu để server ổn định điểm Prestige
     task.wait(16)
 
-    -- BƯỚC 5: Kiểm tra điểm Prestige hiện tại và tự động Tele đến map mạnh nhất để treo máy
     pcall(function()
         local pVal = 0
-        local prestigeStat = Leaderstats and Leaderstats:FindFirstChild("Prestige")
+        local lstats = LocalPlayer:FindFirstChild("leaderstats")
+        local prestigeStat = lstats and lstats:FindFirstChild("Prestige")
         if prestigeStat then
             pVal = prestigeStat.Value
         end
@@ -307,7 +324,7 @@ local function ExecutePrestigeSequence()
 end
 
 -- ==========================================================
--- CHẠY NGẦM
+-- VÒNG LẶP CHẠY NGẦM
 -- ==========================================================
 
 -- Vòng lặp Auto Train
@@ -323,13 +340,14 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp theo dõi mốc 1200 Zenkai
+-- Vòng lặp theo dõi Zenkai
 task.spawn(function()
     while task.wait(Config.CheckDelay) do
         if Config.AutoSequence1200 and not isProcessingSequence then
             pcall(function()
                 local currentZenkai = 0
-                local zenkaiStat = Leaderstats and Leaderstats:FindFirstChild("Zenkai")
+                local lstats = LocalPlayer:FindFirstChild("leaderstats")
+                local zenkaiStat = lstats and lstats:FindFirstChild("Zenkai")
                 
                 if zenkaiStat then
                     currentZenkai = zenkaiStat.Value
@@ -352,7 +370,7 @@ task.spawn(function()
     end
 end)
 
--- Nút thu gọn / mở rộng menu (-)
+-- Thu gọn / Mở rộng Menu
 local minimized = false
 ToggleButton.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -361,9 +379,9 @@ ToggleButton.MouseButton1Click:Connect(function()
         MainFrame.Size = UDim2.new(0, 320, 0, 45)
         ToggleButton.Text = "+"
     else
-        MainFrame.Size = UDim2.new(0, 320, 0, 390)
+        MainFrame.Size = UDim2.new(0, 320, 0, 430)
         ToggleButton.Text = "-"
     end
 end)
 
-print("[Zenkai Box] Anti-AFK & Best Map 16S Menu Loaded Successfully!")
+print("[ZenkaiBlox By Zukielna] Loaded Successfully with Live Status!")
