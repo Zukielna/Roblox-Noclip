@@ -1,23 +1,22 @@
 -- ==========================================================
--- ZENKAIBLOX BY ZUKIELNA - 14S FINAL MAP TELEPORT SCRIPT
+-- ZENKAIBLOX BY ZUKIELNA - LIVE VORTEX BLACK HOLE & SUN HUB
 -- ==========================================================
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- ----------------------------------------------------------
--- KÍCH HOẠT VÀ THEO DÕI TRẠNG THÁI ANTI-AFK
--- ----------------------------------------------------------
-local antiAfkActive = false
-
+-- Anti-AFK 24/7
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
-    antiAfkActive = true
 end)
 
 task.spawn(function()
@@ -25,49 +24,41 @@ task.spawn(function()
         pcall(function()
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new())
-            antiAfkActive = true
         end)
     end
 end)
 
--- Xóa bỏ menu cũ tránh trùng lặp
+-- Xóa menu cũ
 pcall(function()
     for _, v in ipairs(CoreGui:GetChildren()) do
-        if v.Name == "ZenkaiBlox14sFinalMenu" then v:Destroy() end
+        if v.Name == "ZenkaiLiveBlackHoleHub" then v:Destroy() end
     end
     for _, v in ipairs(PlayerGui:GetChildren()) do
-        if v.Name == "ZenkaiBlox14sFinalMenu" then v:Destroy() end
+        if v.Name == "ZenkaiLiveBlackHoleHub" then v:Destroy() end
     end
 end)
 
--- Tạo ScreenGui an toàn
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZenkaiBlox14sFinalMenu"
+ScreenGui.Name = "ZenkaiLiveBlackHoleHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
-if not ScreenGui.Parent then
-    ScreenGui.Parent = PlayerGui
-end
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = PlayerGui end
 
 local Config = {
     AutoTrain = false,
     AutoSequence1200 = false,
-    TrainDelay = 0.05,
+    Language = "VN",
     CheckDelay = 1
 }
 
 local isProcessingSequence = false
 
--- Lấy đường dẫn Remotes an toàn
 local TrainingRemote = ReplicatedStorage:WaitForChild("Combate"):WaitForChild("Training"):WaitForChild("TrainingRemote")
 local RemotesFolder = ReplicatedStorage:WaitForChild("Remotes")
 local PrestigeRemote = RemotesFolder:FindFirstChild("RemotPrestige") and RemotesFolder.RemotPrestige:WaitForChild("PrestigeRemote")
 local TeleportMapRemote = ReplicatedStorage:WaitForChild("TeleportSystem"):WaitForChild("Remotes"):WaitForChild("TeleportToMap")
 
--- Tọa độ Zeno
 local ZenoCFrame = CFrame.new(
     -26161.4883, 436.015259, 10904.1895, 
     -0.990028024, 0, -0.140870303, 
@@ -75,168 +66,545 @@ local ZenoCFrame = CFrame.new(
     0.140870303, 0, -0.990028024
 )
 
+-- Hàm tạo viền LED 7 màu chạy vòng quanh
+local function ApplyRGBBorder(object)
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 2.5
+    stroke.Parent = object
+
+    task.spawn(function()
+        while object and object.Parent do
+            for i = 0, 1, 0.003 do
+                if not object or not object.Parent then break end
+                stroke.Color = Color3.fromHSV(i, 1, 1)
+                task.wait(0.02)
+            end
+        end
+    end)
+end
+
+-- Hiệu ứng hình mặt trời/tia sáng khi bấm nút
+local function AddSunButtonEffect(btn)
+    btn.MouseButton1Click:Connect(function()
+        local sun = Instance.new("Frame")
+        sun.Size = UDim2.new(0, 0, 0, 0)
+        sun.Position = UDim2.new(0.5, 0, 0.5, 0)
+        sun.AnchorPoint = Vector2.new(0.5, 0.5)
+        sun.BackgroundColor3 = Color3.fromRGB(255, 230, 100)
+        sun.BackgroundTransparency = 0.3
+        sun.BorderSizePixel = 0
+        sun.ZIndex = btn.ZIndex + 5
+        sun.Parent = btn
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = sun
+
+        TweenService:Create(sun, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 180, 0, 180),
+            BackgroundTransparency = 1
+        }):Play()
+
+        task.delay(0.4, function()
+            if sun then sun:Destroy() end
+        end)
+    end)
+end
+
 -- ==========================================================
--- GIAO DIỆN MENU (UI)
+-- MÀN HÌNH CHÀO MỪNG (INTRO POPUP)
+-- ==========================================================
+local IntroFrame = Instance.new("Frame")
+IntroFrame.Size = UDim2.new(0, 420, 0, 170)
+IntroFrame.Position = UDim2.new(0.5, -210, 0.5, -85)
+IntroFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+IntroFrame.BackgroundTransparency = 0.05
+IntroFrame.BorderSizePixel = 0
+IntroFrame.ZIndex = 100
+IntroFrame.Parent = ScreenGui
+
+local IntroCorner = Instance.new("UICorner")
+IntroCorner.CornerRadius = UDim.new(0, 16)
+IntroCorner.Parent = IntroFrame
+
+ApplyRGBBorder(IntroFrame)
+
+-- Hố đen thu nhỏ ở intro
+local IntroBlackHole = Instance.new("Frame")
+IntroBlackHole.Size = UDim2.new(0, 80, 0, 80)
+IntroBlackHole.Position = UDim2.new(0.5, -40, 0, 15)
+IntroBlackHole.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+IntroBlackHole.BorderSizePixel = 0
+IntroBlackHole.ZIndex = 101
+IntroBlackHole.Parent = IntroFrame
+
+local BHCorner = Instance.new("UICorner")
+BHCorner.CornerRadius = UDim.new(1, 0)
+BHCorner.Parent = IntroBlackHole
+
+local BHStroke = Instance.new("UIStroke")
+BHStroke.Color = Color3.fromRGB(138, 43, 226)
+BHStroke.Thickness = 3
+BHStroke.Parent = IntroBlackHole
+
+task.spawn(function()
+    while IntroBlackHole and IntroBlackHole.Parent do
+        for i = 0, 1, 0.01 do
+            if not IntroBlackHole or not IntroBlackHole.Parent then break end
+            BHStroke.Color = Color3.fromHSV(i, 1, 1)
+            task.wait(0.03)
+        end
+    end
+end)
+
+local IntroTitle = Instance.new("TextLabel")
+IntroTitle.Size = UDim2.new(1, 0, 0, 25)
+IntroTitle.Position = UDim2.new(0, 0, 0, 100)
+IntroTitle.BackgroundTransparency = 1
+IntroTitle.ZIndex = 102
+IntroTitle.Text = "⚡ ZENKAIBLOX BY ZUKIELNA ⚡"
+IntroTitle.TextColor3 = Color3.fromRGB(0, 255, 204)
+IntroTitle.TextSize = 13
+IntroTitle.Font = Enum.Font.GothamBold
+IntroTitle.Parent = IntroFrame
+
+local IntroTextVN = Instance.new("TextLabel")
+IntroTextVN.Size = UDim2.new(1, 0, 0, 20)
+IntroTextVN.Position = UDim2.new(0, 0, 0, 125)
+IntroTextVN.BackgroundTransparency = 1
+IntroTextVN.ZIndex = 102
+IntroTextVN.Text = "chào mừng bạn đến với menu"
+IntroTextVN.TextColor3 = Color3.fromRGB(255, 215, 0)
+IntroTextVN.TextSize = 12
+IntroTextVN.Font = Enum.Font.GothamSemibold
+IntroTextVN.Parent = IntroFrame
+
+local IntroTextEN = Instance.new("TextLabel")
+IntroTextEN.Size = UDim2.new(1, 0, 0, 20)
+IntroTextEN.Position = UDim2.new(0, 0, 0, 145)
+IntroTextEN.BackgroundTransparency = 1
+IntroTextEN.ZIndex = 102
+IntroTextEN.Text = "Welcome to the menu"
+IntroTextEN.TextColor3 = Color3.fromRGB(200, 200, 200)
+IntroTextEN.TextSize = 11
+IntroTextEN.Font = Enum.Font.Gotham
+IntroTextEN.Parent = IntroFrame
+
+-- ==========================================================
+-- GIAO DIỆN CHÍNH (MAIN HUB VỚI HỐ ĐEN VÔ CỰC ĐANG HOẠT ĐỘNG)
 -- ==========================================================
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 430)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -215)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.Size = UDim2.new(0, 640, 0, 410)
+MainFrame.Position = UDim2.new(0.5, -320, 0.5, -205)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+MainFrame.BackgroundTransparency = 0.05
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
-MainFrame.Visible = true
+MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
 
-local TitleBar = Instance.new("TextLabel")
-TitleBar.Size = UDim2.new(1, 0, 0, 45)
-TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-TitleBar.Text = "⚡ ZenkaiBlox By Zukielna | Map: ... ⚡"
-TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleBar.TextSize = 11
-TitleBar.Font = Enum.Font.GothamBold
-TitleBar.Parent = MainFrame
+ApplyRGBBorder(MainFrame)
 
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 12)
-TitleCorner.Parent = TitleBar
+-- ==========================================================
+-- HỆ THỐNG HỐ ĐN ĐANG HOẠT ĐỘNG (VÒNG XOÁY NĂNG LƯỢNG)
+-- ==========================================================
+local BlackHoleContainer = Instance.new("Frame")
+BlackHoleContainer.Size = UDim2.new(1, 0, 1, 0)
+BlackHoleContainer.BackgroundTransparency = 1
+BlackHoleContainer.ClipsDescendants = true
+BlackHoleContainer.ZIndex = 1
+BlackHoleContainer.Parent = MainFrame
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0, 35, 0, 35)
-ToggleButton.Position = UDim2.new(1, -40, 0, 5)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(45, 45, 65)
-ToggleButton.Text = "-"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 18
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Parent = TitleBar
+-- Tạo tâm hố đen
+local BHCenter = Instance.new("Frame")
+BHCenter.Size = UDim2.new(0, 120, 0, 120)
+BHCenter.Position = UDim2.new(0.5, -60, 0.5, -60)
+BHCenter.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+BHCenter.BorderSizePixel = 0
+BHCenter.ZIndex = 2
+BHCenter.Parent = BlackHoleContainer
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 8)
-ToggleCorner.Parent = ToggleButton
+local BHCenterCorner = Instance.new("UICorner")
+BHCenterCorner.CornerRadius = UDim.new(1, 0)
+BHCenterCorner.Parent = BHCenter
 
-local Container = Instance.new("ScrollingFrame")
-Container.Size = UDim2.new(1, -20, 1, -55)
-Container.Position = UDim2.new(0, 10, 0, 50)
-Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0, 0, 0, 390)
-Container.ScrollBarThickness = 4
-Container.Visible = true
-Container.Parent = MainFrame
+local BHCenterStroke = Instance.new("UIStroke")
+BHCenterStroke.Color = Color3.fromRGB(150, 0, 255)
+BHCenterStroke.Thickness = 5
+BHCenterStroke.Parent = BHCenter
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 10)
-UIListLayout.Parent = Container
+-- Tạo các vòng xoáy năng lượng quay quanh hố đen (Live Vortex Rings)
+for i = 1, 4 do
+    local ring = Instance.new("Frame")
+    ring.Size = UDim2.new(0, 120 + (i * 70), 0, 120 + (i * 70))
+    ring.AnchorPoint = Vector2.new(0.5, 0.5)
+    ring.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ring.BackgroundTransparency = 1
+    ring.ZIndex = 1
+    ring.Parent = BlackHoleContainer
 
-local function CreateButton(name, callback)
+    local ringStroke = Instance.new("UIStroke")
+    ringStroke.Color = Color3.fromRGB(80 - (i * 15), 180, 255)
+    ringStroke.Transparency = 0.4 + (i * 0.1)
+    ringStroke.Thickness = 2
+    ringStroke.Parent = ring
+
+    -- Cho vòng xoáy liên tục
+    task.spawn(function()
+        local rotSpeed = (i % 2 == 0) and 1 or -1
+        while ring and ring.Parent do
+            ring.Rotation = (ring.Rotation + (rotSpeed * 1.5)) % 360
+            task.wait(0.02)
+        end
+    end)
+end
+
+-- Hiệu ứng đổi màu viền tâm hố đen liên tục
+task.spawn(function()
+    while BHCenterStroke and BHCenterStroke.Parent do
+        for h = 0, 1, 0.003 do
+            if not BHCenterStroke or not BHCenterStroke.Parent then break end
+            BHCenterStroke.Color = Color3.fromHSV(h, 1, 1)
+            task.wait(0.03)
+        end
+    end
+end)
+
+-- Sau 3 giây, ẩn Intro và mở Main Menu
+task.spawn(function()
+    task.wait(3.0)
+    TweenService:Create(IntroFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    task.wait(0.4)
+    IntroFrame:Destroy()
+    MainFrame.Visible = true
+end)
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 48)
+TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+TopBar.BackgroundTransparency = 0.2
+TopBar.BorderSizePixel = 0
+TopBar.ZIndex = 10
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 14)
+TopBarCorner.Parent = TopBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(0, 360, 1, 0)
+TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.ZIndex = 11
+TitleLabel.Text = "⚡ ZenkaiBlox By Zukielna"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 13
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+local LangBtn = Instance.new("TextButton")
+LangBtn.Size = UDim2.new(0, 60, 0, 30)
+LangBtn.Position = UDim2.new(1, -110, 0.5, -15)
+LangBtn.BackgroundColor3 = Color3.fromRGB(41, 128, 185)
+LangBtn.Text = "🇻🇳 VIE"
+LangBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+LangBtn.TextSize = 11
+LangBtn.Font = Enum.Font.GothamBold
+LangBtn.ZIndex = 11
+LangBtn.Parent = TopBar
+
+local LangCorner = Instance.new("UICorner")
+LangCorner.CornerRadius = UDim.new(0, 6)
+LangCorner.Parent = LangBtn
+AddSunButtonEffect(LangBtn)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -38, 0.5, -15)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(192, 57, 43)
+CloseBtn.Text = "-"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.ZIndex = 11
+CloseBtn.Parent = TopBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+AddSunButtonEffect(CloseBtn)
+
+-- ==========================================================
+-- SIDEBAR & TAB CONTAINER
+-- ==========================================================
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 150, 1, -52)
+Sidebar.Position = UDim2.new(0, 0, 0, 48)
+Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+Sidebar.BackgroundTransparency = 0.5
+Sidebar.BorderSizePixel = 0
+Sidebar.ZIndex = 10
+Sidebar.Parent = MainFrame
+
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Padding = UDim.new(0, 8)
+SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SidebarLayout.Parent = Sidebar
+
+local ContainerHolder = Instance.new("Frame")
+ContainerHolder.Size = UDim2.new(1, -160, 1, -60)
+ContainerHolder.Position = UDim2.new(0, 155, 0, 52)
+ContainerHolder.BackgroundTransparency = 1
+ContainerHolder.ZIndex = 10
+ContainerHolder.Parent = MainFrame
+
+local function CreateTabContainer()
+    local container = Instance.new("ScrollingFrame")
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.Position = UDim2.new(0, 0, 0, 0)
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.CanvasSize = UDim2.new(0, 0, 0, 0)
+    container.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    container.ScrollBarThickness = 4
+    container.Visible = false
+    container.ZIndex = 10
+    container.Parent = ContainerHolder
+    
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 10)
+    layout.Parent = container
+    return container
+end
+
+local TabHome = CreateTabContainer()
+local TabFarm = CreateTabContainer()
+local TabTeleport = CreateTabContainer()
+
+TabHome.Visible = true
+
+local function CreateSidebarTab(nameVN, nameEN, targetTab)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    btn.Text = name
+    btn.Size = UDim2.new(0, 136, 0, 44)
+    btn.BackgroundColor3 = Color3.fromRGB(22, 22, 32)
+    btn.BackgroundTransparency = 0.3
+    btn.Text = nameVN
     btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.Font = Enum.Font.GothamSemibold
-    btn.Parent = Container
+    btn.ZIndex = 11
+    btn.Parent = Sidebar
 
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
 
+    btn:SetAttribute("NameVN", nameVN)
+    btn:SetAttribute("NameEN", nameEN)
+
+    AddSunButtonEffect(btn)
+
     btn.MouseButton1Click:Connect(function()
-        callback(btn)
+        TabHome.Visible = false
+        TabFarm.Visible = false
+        TabTeleport.Visible = false
+        targetTab.Visible = true
     end)
     return btn
 end
 
+local tab1 = CreateSidebarTab("🏠 Trang Chủ", "🏠 Home", TabHome)
+local tab2 = CreateSidebarTab("⚙️ Cày Cuốc", "⚙️ Farming", TabFarm)
+local tab3 = CreateSidebarTab("🗺️ Tất Cả Map", "🗺️ All Maps", TabTeleport)
+
 -- ==========================================================
--- CÁC NÚT BẤM CHỨC NĂNG
+-- NỘI DUNG TAB TRANG CHỦ
 -- ==========================================================
+local WelcomeBox = Instance.new("Frame")
+WelcomeBox.Size = UDim2.new(1, 0, 0, 115)
+WelcomeBox.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+WelcomeBox.BackgroundTransparency = 0.3
+WelcomeBox.ZIndex = 11
+WelcomeBox.Parent = TabHome
 
-CreateButton("Auto Train: OFF", function(btn)
-    Config.AutoTrain = not Config.AutoTrain
-    if Config.AutoTrain then
-        btn.Text = "Auto Train: ON"
-        btn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    else
-        btn.Text = "Auto Train: OFF"
-        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    end
-end)
+local WelcomeCorner = Instance.new("UICorner")
+WelcomeCorner.CornerRadius = UDim.new(0, 10)
+WelcomeCorner.Parent = WelcomeBox
 
-CreateButton("👑 Full Auto Sequence (1200Z): OFF", function(btn)
-    Config.AutoSequence1200 = not Config.AutoSequence1200
-    if Config.AutoSequence1200 then
-        btn.Text = "Full Auto Sequence (1200Z): ON"
-        btn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-        isProcessingSequence = false
-    else
-        btn.Text = "Full Auto Sequence (1200Z): OFF"
-        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    end
-end)
+local WelcomeText = Instance.new("TextLabel")
+WelcomeText.Size = UDim2.new(1, -20, 1, 0)
+WelcomeText.Position = UDim2.new(0, 10, 0, 0)
+WelcomeText.BackgroundTransparency = 1
+WelcomeText.ZIndex = 12
+WelcomeText.Text = " Chào mừng trở lại,\n " .. LocalPlayer.Name .. "!\n⚡ Chống AFK Hoạt Động 24/7\n⌨️ Bấm [LeftControl] để Ẩn/Hiện Menu."
+WelcomeText.TextColor3 = Color3.fromRGB(241, 196, 15)
+WelcomeText.TextSize = 11
+WelcomeText.Font = Enum.Font.GothamBold
+WelcomeText.TextXAlignment = Enum.TextXAlignment.Left
+WelcomeText.Parent = WelcomeBox
 
--- Bảng hiển thị Trạng thái chính
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, 0, 0, 35)
-StatusLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-StatusLabel.Text = "Trạng thái: Sẵn sàng cày cuốc"
-StatusLabel.TextColor3 = Color3.fromRGB(241, 196, 15)
-StatusLabel.TextSize = 11
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.Parent = Container
+local StatusDisplay = Instance.new("TextLabel")
+StatusDisplay.Size = UDim2.new(1, 0, 0, 48)
+StatusDisplay.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+StatusDisplay.BackgroundTransparency = 0.3
+StatusDisplay.ZIndex = 11
+StatusDisplay.Text = "Trạng thái Hub: Đang hoạt động siêu tốc"
+StatusDisplay.TextColor3 = Color3.fromRGB(46, 204, 113)
+StatusDisplay.TextSize = 11
+StatusDisplay.Font = Enum.Font.Gotham
+StatusDisplay.Parent = TabHome
 
 local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 6)
-StatusCorner.Parent = StatusLabel
-
--- Dòng thông báo hiển thị trạng thái Anti-AFK trực quan
-local AntiAfkLabel = Instance.new("TextLabel")
-AntiAfkLabel.Size = UDim2.new(1, 0, 0, 30)
-AntiAfkLabel.BackgroundColor3 = Color3.fromRGB(20, 35, 25)
-AntiAfkLabel.Text = "🛡️ [Anti-AFK]: Đang hoạt động (Bảo vệ 24/7)"
-AntiAfkLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
-AntiAfkLabel.TextSize = 11
-AntiAfkLabel.Font = Enum.Font.GothamBold
-AntiAfkLabel.Parent = Container
-
-local AntiAfkCorner = Instance.new("UICorner")
-AntiAfkCorner.CornerRadius = UDim.new(0, 6)
-AntiAfkCorner.Parent = AntiAfkLabel
+StatusCorner.CornerRadius = UDim.new(0, 10)
+StatusCorner.Parent = StatusDisplay
 
 -- ==========================================================
--- CẬP NHẬT TÊN MAP LÊN TIÊU ĐỀ
+-- NỘI DUNG TAB CÀY CUỐC
 -- ==========================================================
-task.spawn(function()
-    while task.wait(1) do
+local function CreateHubButton(parent, textVN, textEN, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 45)
+    btn.BackgroundColor3 = Color3.fromRGB(22, 22, 32)
+    btn.BackgroundTransparency = 0.3
+    btn.Text = textVN
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamSemibold
+    btn.ZIndex = 11
+    btn.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = btn
+
+    btn:SetAttribute("TextVN", textVN)
+    btn:SetAttribute("TextEN", textEN)
+
+    AddSunButtonEffect(btn)
+
+    btn.MouseButton1Click:Connect(function() callback(btn) end)
+    return btn
+end
+
+local BtnTrain = CreateHubButton(TabFarm, "⚡ Luyện Tập Nhanh: TẮT", "⚡ Fast Train: OFF", function(btn)
+    Config.AutoTrain = not Config.AutoTrain
+    local isVN = (Config.Language == "VN")
+    local suffix = Config.AutoTrain and (isVN and ": BẬT" or ": ON") or (isVN and ": TẮT" or ": OFF")
+    local base = isVN and "⚡ Luyện Tập Nhanh" or "⚡ Fast Train"
+    btn.Text = base .. suffix
+    btn.BackgroundColor3 = Config.AutoTrain and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(22, 22, 32)
+end)
+
+local BtnAuto1200 = CreateHubButton(TabFarm, "👑 Tự Động 1200Z (Về Final): TẮT", "👑 Full Auto 1200Z (Final): OFF", function(btn)
+    Config.AutoSequence1200 = not Config.AutoSequence1200
+    local isVN = (Config.Language == "VN")
+    local suffix = Config.AutoSequence1200 and (isVN and ": BẬT" or ": ON") or (isVN and ": TẮT" or ": OFF")
+    local base = isVN and "👑 Tự Động 1200Z (Về Final)" or "👑 Full Auto 1200Z (Final)"
+    btn.Text = base .. suffix
+    btn.BackgroundColor3 = Config.AutoSequence1200 and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(22, 22, 32)
+    if Config.AutoSequence1200 then isProcessingSequence = false end
+end)
+
+-- ==========================================================
+-- NỘI DUNG TAB TẤT CẢ MAP (BYPASS ĐIỀU KIỆN TELE)
+-- ==========================================================
+local allMapsList = {
+    "Kami", "Inicial", "Namek", "TerraSagrada", "Arena", "Daima", 
+    "Small", "BillsPlanet", "Terra", "Sonho", "Abism", "ZenoPalace", 
+    "Torneio", "Hiperbolic", "KingCarpa", "Snowland", "Vegeta", 
+    "Setimo", "Time", "Dragon", "Final"
+}
+
+for _, mapFolderName in ipairs(allMapsList) do
+    CreateHubButton(TabTeleport, "🗺️ Dịch Chuyển Map: " .. mapFolderName, "🗺️ Teleport Map: " .. mapFolderName, function()
         pcall(function()
-            local currentMapName = "ZenoPalace"
-            if LocalPlayer:GetAttribute("CurrentMap") then
-                currentMapName = tostring(LocalPlayer:GetAttribute("CurrentMap"))
-            else
-                currentMapName = workspace.Name ~= "" and "Main Server" or "Unknown"
+            local mapasGui = PlayerGui:FindFirstChild("MapasGui")
+            if mapasGui then mapasGui.Enabled = false end
+            
+            if TeleportMapRemote then
+                TeleportMapRemote:FireServer(mapFolderName)
+                local msgVN = "⚡ Đã dịch chuyển tức thì tới: " .. mapFolderName
+                local msgEN = "⚡ Force Teleported to: " .. mapFolderName
+                StatusDisplay.Text = (Config.Language == "VN" and msgVN or msgEN)
             end
-            TitleBar.Text = "⚡ Zukielna | Map: " .. currentMapName
         end)
+    end)
+end
+
+-- ==========================================================
+-- ĐỔI NGÔN NGỮ TOÀN DIỆN
+-- ==========================================================
+LangBtn.MouseButton1Click:Connect(function()
+    if Config.Language == "VN" then
+        Config.Language = "EN"
+        LangBtn.Text = "🇬🇧 ENG"
+        
+        tab1.Text = tab1:GetAttribute("NameEN")
+        tab2.Text = tab2:GetAttribute("NameEN")
+        tab3.Text = tab3:GetAttribute("NameEN")
+        
+        BtnTrain.Text = "⚡ Fast Train: " .. (Config.AutoTrain and "ON" or "OFF")
+        BtnAuto1200.Text = "👑 Full Auto 1200Z (Final): " .. (Config.AutoSequence1200 and "ON" or "OFF")
+        
+        StatusDisplay.Text = "Hub Status: Running at lightning speed"
+    else
+        Config.Language = "VN"
+        LangBtn.Text = "🇻🇳 VIE"
+        
+        tab1.Text = tab1:GetAttribute("NameVN")
+        tab2.Text = tab2:GetAttribute("NameVN")
+        tab3.Text = tab3:GetAttribute("NameVN")
+        
+        BtnTrain.Text = "⚡ Luyện Tập Nhanh: " .. (Config.AutoTrain and "BẬT" or "TẮT")
+        BtnAuto1200.Text = "👑 Tự Động 1200Z (Về Final): " .. (Config.AutoSequence1200 and "BẬT" or "TẮT")
+        
+        StatusDisplay.Text = "Trạng thái Hub: Đang hoạt động siêu tốc"
     end
 end)
 
 -- ==========================================================
--- QUY TRÌNH TỰ ĐỘNG PRESTIGE 1200Z (CHỜ 14S VÀ TELE THẲNG MAP FINAL)
+-- XỬ LÝ ẨN/HIỆN MENU & THU GỌN TOPBAR
+-- ==========================================================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+local minimized = false
+CloseBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    Sidebar.Visible = not minimized
+    TabHome.Visible = (not minimized) and (tab1.BackgroundColor3 == Color3.fromRGB(22, 22, 32))
+    TabFarm.Visible = false
+    TabTeleport.Visible = false
+    if not minimized then TabHome.Visible = true end
+
+    if minimized then
+        MainFrame.Size = UDim2.new(0, 640, 0, 48)
+        CloseBtn.Text = "+"
+    else
+        MainFrame.Size = UDim2.new(0, 640, 0, 410)
+        CloseBtn.Text = "-"
+    end
+end)
+
+-- ==========================================================
+-- HỆ THỐNG MACRO PRESTIGE 1200Z TỐC ĐỘ CAO KHÔNG ĐỘ TRỄ
 -- ==========================================================
 local function ExecutePrestigeSequence()
     isProcessingSequence = true
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-    if not hrp then 
-        isProcessingSequence = false 
-        return 
-    end
+    if not hrp then isProcessingSequence = false return end
 
     pcall(function()
         local mapasGui = PlayerGui:FindFirstChild("MapasGui")
@@ -244,19 +612,17 @@ local function ExecutePrestigeSequence()
         if mapasGui then mapasGui.Enabled = false end
         if menuGui then menuGui.Enabled = false end
         
-        if TeleportMapRemote then
-            TeleportMapRemote:FireServer("ZenoPalace")
-        end
+        if TeleportMapRemote then TeleportMapRemote:FireServer("ZenoPalace") end
     end)
-    StatusLabel.Text = "1. Vào Map ZenoPalace (Ẩn Map)..."
-    task.wait(2.5)
+    StatusDisplay.Text = Config.Language == "VN" and "1. Đang dịch chuyển đến ZenoPalace..." or "1. Entering ZenoPalace..."
+    
+    task.wait(0.6)
 
-    local currentHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if currentHRP then
-        currentHRP.CFrame = ZenoCFrame
+    if char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = ZenoCFrame
     end
-    StatusLabel.Text = "2. Đã tới chỗ Zeno!"
-    task.wait(0.8)
+    StatusDisplay.Text = Config.Language == "VN" and "2. Đã tới gặp Zeno!" or "2. Arrived at Zeno!"
+    task.wait(0.15)
 
     pcall(function()
         local zenoModel = workspace:FindFirstChild("MissionQuest", true) 
@@ -265,57 +631,46 @@ local function ExecutePrestigeSequence()
 
         if zenoModel then
             local prompt = zenoModel:FindFirstChildOfClass("ProximityPrompt", true)
-            if prompt then
-                fireproximityprompt(prompt)
-            end
+            if prompt then fireproximityprompt(prompt) end
         end
     end)
-    StatusLabel.Text = "3. Đang nói chuyện với Zeno..."
-    task.wait(0.5)
+    StatusDisplay.Text = Config.Language == "VN" and "3. Đang nhận tiến cấp Zeno..." or "3. Claiming Prestige..."
+    task.wait(0.1)
 
     pcall(function()
         if PrestigeRemote then
             PrestigeRemote:FireServer("Open")
-            task.wait(0.3)
+            task.wait(0.05)
             PrestigeRemote:FireServer("Accept")
         end
     end)
-    StatusLabel.Text = "4. Đang chờ 14s hoàn tất..."
-    
-    -- Đợi đúng 14 giây theo yêu cầu mới
+    StatusDisplay.Text = Config.Language == "VN" and "4. Chờ 14 giây hoàn tất tiến cấp..." or "4. Waiting 14s to complete..."
     task.wait(14)
 
-    -- Dịch chuyển thẳng đến map "Final" bỏ qua kiểm tra điểm Prestige
     pcall(function()
-        StatusLabel.Text = "5. Vào thẳng map cuối: Final"
-
-        if TeleportMapRemote then
-            TeleportMapRemote:FireServer("Final")
-        end
+        StatusDisplay.Text = Config.Language == "VN" and "5. Về ngay map cuối: Final!" or "5. Teleporting to Final Map!"
+        if TeleportMapRemote then TeleportMapRemote:FireServer("Final") end
     end)
 
-    task.wait(2)
+    task.wait(0.5)
     isProcessingSequence = false
 end
 
--- ==========================================================
--- VÒNG LẶP CHẠY NGẦM
--- ==========================================================
-
--- Vòng lặp Auto Train
+-- Vòng lặp Auto Train Siêu Tốc
 task.spawn(function()
-    while task.wait(Config.TrainDelay) do
+    while true do
         if Config.AutoTrain and not isProcessingSequence then
             pcall(function()
-                if TrainingRemote then
-                    TrainingRemote:FireServer()
-                end
+                if TrainingRemote then TrainingRemote:FireServer() end
             end)
+            task.wait()
+        else
+            task.wait(0.1)
         end
     end
 end)
 
--- Vòng lặp theo dõi Zenkai
+-- Vòng lặp theo dõi chỉ số Zenkai
 task.spawn(function()
     while task.wait(Config.CheckDelay) do
         if Config.AutoSequence1200 and not isProcessingSequence then
@@ -327,14 +682,11 @@ task.spawn(function()
                 if zenkaiStat then
                     currentZenkai = zenkaiStat.Value
                 else
-                    local attrZenkai = LocalPlayer:GetAttribute("Zenkai")
-                    if attrZenkai then
-                        currentZenkai = attrZenkai
-                    end
+                    currentZenkai = LocalPlayer:GetAttribute("Zenkai") or 0
                 end
 
                 if not isProcessingSequence then
-                    StatusLabel.Text = "Zenkai: " .. tostring(currentZenkai) .. " / 1200Z"
+                    StatusDisplay.Text = (Config.Language == "VN" and "Chỉ số Zenkai: " or "Zenkai Stats: ") .. tostring(currentZenkai) .. " / 1200Z"
                 end
 
                 if currentZenkai >= 1200 then
@@ -345,18 +697,4 @@ task.spawn(function()
     end
 end)
 
--- Thu gọn / Mở rộng Menu
-local minimized = false
-ToggleButton.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    Container.Visible = not minimized
-    if minimized then
-        MainFrame.Size = UDim2.new(0, 320, 0, 45)
-        ToggleButton.Text = "+"
-    else
-        MainFrame.Size = UDim2.new(0, 320, 0, 430)
-        ToggleButton.Text = "-"
-    end
-end)
-
-print("[ZenkaiBlox By Zukielna] Loaded Successfully with 14s Final Teleport!")
+print("[ZenkaiBlox By Zukielna] Live Black Hole & Sun Effect Hub Loaded Successfully!")
